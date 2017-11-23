@@ -1,0 +1,5 @@
+# Requirements
+
+Python
+
+Pygame Framework
