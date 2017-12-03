@@ -176,16 +176,16 @@ int main() {
 
   ////////////////////////////////////////////////
 
-  
+
 
   // GLuint programID2 = LoadShaders( "TransformVertexShader2.vertexshader", "TextureFragmentShader.fragmentshader" );
 
   // // Get a handle for our "MVP" uniform
   // GLuint MatrixID2 = glGetUniformLocation(programID2, "MVP");
-    
+
   // // Load the texture
   // GLuint Texture = loadBMP_custom("Astronaut_BaseColor.bmp");
-	
+
   // // Get a handle for our "myTextureSampler" uniform
   // GLuint TextureID  = glGetUniformLocation(programID2, "myTextureSampler");
 
@@ -346,16 +346,22 @@ int main() {
       (void *)0       // offset of array buffer
     );
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 14); 
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
 
     glUseProgram(programID2);
 
-    glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
-        
+    glm::mat4 MVPastronaut = MVP;
+    MVPastronaut = glm::scale(MVPastronaut, glm::vec3(32*1.2, 32*1.2, 32*1.2));
+    MVPastronaut = glm::translate(MVPastronaut, glm::vec3(0, -2, 0));
+    MVPastronaut = glm::rotate(MVPastronaut, (float)M_PI/2, glm::vec3(0, 1, 0));
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVPastronaut[0][0]);
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, Texture2);
     glUniform1i(Texture2ID, 0);
-        
+
     // 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer2);
@@ -379,7 +385,7 @@ int main() {
 			0,                                // stride
 			(void*)0                          // array buffer offset
 		);
-    
+
     glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
     // 3 indices starting at 0 -> 1 triangle
