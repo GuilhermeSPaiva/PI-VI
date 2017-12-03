@@ -30,7 +30,7 @@ int main() {
   float horizontalAngle = M_PI;
   float verticalAngle = 0.f;
 
-  v3 initialPos = {leftRight+300, 500, zoomOut};
+  v3 initialPos = {leftRight+300, 98, zoomOut};
   v3 currentPos = {
     cos(verticalAngle) * sin(horizontalAngle),
     sin(verticalAngle),
@@ -128,21 +128,26 @@ int main() {
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
+  GLuint VertexArrayID2;
+  glGenVertexArrays(1, &VertexArrayID2);
+  glBindVertexArray(VertexArrayID2);
+
   // Create and compile our GLSL program from the shaders
-  GLuint programID = LoadShaders("TransformVertexShader.vertexshader",
-                                 "ColorFragmentShader.fragmentshader");
+  GLuint programID = LoadShaders("TransformVertexShader.vertexshader", "ColorFragmentShader.fragmentshader");
+  GLuint programID2 = LoadShaders( "TransformVertexShader2.vertexshader", "TextureFragmentShader2.fragmentshader");
 
   // Get a handle for our "MVP" uniform
   GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+  GLuint MatrixID2 = glGetUniformLocation(programID2, "MVP");
 
   // Projection Matrix : 45˚ Field of View, 4:3 ratio, display range: 0.1 to 100 units
   glm::mat4 Projection = glm::perspective(glm::radians(70.f), 16.f/9.f, 0.1f, 10000.f);
 
   // Camera Matrix
-  glm::mat4 View  = glm::lookAt(
+  glm::mat4 View = glm::lookAt(
                     glm::vec3(initialPos.x, initialPos.y, initialPos.z),
                     glm::vec3(initialPos.x, initialPos.y, initialPos.z) +
-                              glm::vec3(currentPos.x, currentPos.y, currentPos.z),
+                    glm::vec3(currentPos.x, currentPos.y, currentPos.z),
                     glm::vec3(upRight.x, upRight.y, upRight.z)
   );
 
@@ -151,11 +156,27 @@ int main() {
   // Our ModelViewProjection : multiplication of our 3 matrices
   glm::mat4 MVP = Projection * View * Model; // Remember, matrix multiplication is the other way around
 
+  GLuint Texture2 = loadBMP_custom("Astronaut_BaseColor.bmp");
+  GLuint Texture2ID = glGetUniformLocation(programID2, "myTextureSampler");
+
+  std::vector<glm::vec3> vertices;
+	std::vector<glm::vec2> uvs;
+	std::vector<glm::vec3> normals; // Won't be used at the moment.
+  loadOBJ("Astronaut.obj", vertices, uvs, normals);
+
+  GLuint vertexbuffer2;
+	glGenBuffers(1, &vertexbuffer2);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer2);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+
+	GLuint uvbuffer2;
+	glGenBuffers(1, &uvbuffer2);
+	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer2);
+	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
+
   ////////////////////////////////////////////////
 
-  // GLuint VertexArrayID2;
-  // glGenVertexArrays(1, &VertexArrayID2);
-  // glBindVertexArray(VertexArrayID2);
+  
 
   // GLuint programID2 = LoadShaders( "TransformVertexShader2.vertexshader", "TextureFragmentShader.fragmentshader" );
 
@@ -254,8 +275,7 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Use our shader
-	glUseProgram(programID);
-	// glUseProgram(programID2);
+		glUseProgram(programID);
 
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
@@ -326,7 +346,43 @@ int main() {
       (void *)0       // offset of array buffer
     );
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 14); // 3 indices starting at 0 -> 1 triangle
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 14); 
+
+    glUseProgram(programID2);
+
+    glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &MVP[0][0]);
+        
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, Texture2);
+    glUniform1i(Texture2ID, 0);
+        
+    // 1rst attribute buffer : vertices
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer2);
+		glVertexAttribPointer(
+			0,                  // attribute
+			3,                  // size
+			GL_FLOAT,           // type
+			GL_FALSE,           // normalized?
+			0,                  // stride
+			(void*)0            // array buffer offset
+		);
+
+		// 2nd attribute buffer : UVs
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer2);
+		glVertexAttribPointer(
+			1,                                // attribute
+			2,                                // size
+			GL_FLOAT,                         // type
+			GL_FALSE,                         // normalized?
+			0,                                // stride
+			(void*)0                          // array buffer offset
+		);
+    
+    glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+    // 3 indices starting at 0 -> 1 triangle
 
     int numOfChecks = 32;
     for(int t = 0;t < numOfChecks;++t) {
@@ -410,12 +466,12 @@ int main() {
  }
 	glDeleteVertexArrays(1, &VertexArrayID);
 
-	// glDeleteBuffers(1, &vertexbuffer2);
-	// glDeleteBuffers(1, &uvbuffer);
+	glDeleteBuffers(1, &vertexbuffer2);
+	glDeleteBuffers(1, &uvbuffer2);
 	glDeleteProgram(programID);
-	// glDeleteProgram(programID2);
-	// glDeleteTextures(1, &Texture);
-	// glDeleteVertexArrays(1, &VertexArrayID2);
+	glDeleteProgram(programID2);
+	glDeleteTextures(1, &Texture2);
+	glDeleteVertexArrays(1, &VertexArrayID2);
 
   // Close window
   glfwTerminate();
