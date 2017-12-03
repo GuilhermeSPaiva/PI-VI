@@ -1,9 +1,11 @@
 # Requirements
 
-GLEW
+GLEW, GLFW, GLM, OpenGL 3+
 
-GLFW
+# Compiling
 
-GLM
+./build
 
-OpenGL 3+
+# Runing
+
+./test
