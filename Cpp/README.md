@@ -6,6 +6,6 @@ GLEW, GLFW, GLM, OpenGL 3+
 
 ./build
 
-# Runing
+# Running
 
 ./test
