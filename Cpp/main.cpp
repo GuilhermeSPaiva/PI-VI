@@ -3,10 +3,16 @@
 #include "objloader.hpp"
 #include "texture.hpp"
 
+float lerp(float a, float t, float b) {
+	return t <= 0 ? a :
+		   t >= 1 ? b :
+		   (1-t)*a + t*b;
+}
+
 #define WIDTH 1280
 #define HEIGHT 720
 #define GRAVITY_MAX 9.81f * 1.5f
-#define AIRMASS_MAX 0.5f
+#define AIRMASS_MAX 1.29f * 1.5f
 
 GLFWwindow *window;
 
@@ -14,14 +20,14 @@ int main() {
 
   bool spacePressed = false;
   bool resetPressed = false;
-
   float pos = 0;
-
   double deltaTime = 0;
   double lastTime = 0;
   double currentTime = 0;
+  double drag = 0;
 
   double gravity = randRange(0.1f, GRAVITY_MAX);//9.81f;
+  // gravity = 9.81f;
   printf("GRAVITY: %lf m/s^2\n", gravity);
   double airMass = randRange(0.f, AIRMASS_MAX);
   // printf("AIR MASS is %lf scrubles\n", airMass);
@@ -175,38 +181,6 @@ int main() {
 	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
 
   ////////////////////////////////////////////////
-
-
-
-  // GLuint programID2 = LoadShaders( "TransformVertexShader2.vertexshader", "TextureFragmentShader.fragmentshader" );
-
-  // // Get a handle for our "MVP" uniform
-  // GLuint MatrixID2 = glGetUniformLocation(programID2, "MVP");
-
-  // // Load the texture
-  // GLuint Texture = loadBMP_custom("Astronaut_BaseColor.bmp");
-
-  // // Get a handle for our "myTextureSampler" uniform
-  // GLuint TextureID  = glGetUniformLocation(programID2, "myTextureSampler");
-
-  // // Read our .obj file
-  // std::vector<glm::vec3> vertices;
-  // std::vector<glm::vec2> uvs;
-  // std::vector<glm::vec3> normals; // Won't be used at the moment.
-  // loadOBJ("Astronaut.obj", vertices, uvs, normals);
-
-  // // Load it into a VBO
-  // GLuint vertexbuffer2;
-  // glGenBuffers(1, &vertexbuffer2);
-  // glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer2);
-  // glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
-
-  // GLuint uvbuffer;
-  // glGenBuffers(1, &uvbuffer);
-  // glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-  // glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
-
-  ////////////////////////////////////////////////
   //////////////// MAIN LOOP /////////////////////
   ////////////////////////////////////////////////
 
@@ -242,8 +216,6 @@ int main() {
       pos = astronaut.pos.x;
       gravity = randRange(0.1f, GRAVITY_MAX);
       printf("GRAVITY: %lf m/s^2\n", gravity);
-      // airMass = randRange(0.f, AIRMASS_MAX);
-  	  // printf("AIR MASS is %lf scrubles\n", airMass);
       gravity *= tileSize.x;
     }
 
@@ -254,13 +226,13 @@ int main() {
     if(glfwGetKey(window,GLFW_KEY_SPACE) &&
        !spacePressed) {
       spacePressed = true;
-      astronaut.speed.y = 5 * tileSize.x;
-      astronaut.speed.x = 5 * tileSize.x;
+      astronaut.speed.y = 3 * tileSize.x;
+      astronaut.speed.x = 3 * tileSize.x;
       pos = astronaut.pos.x;
-      // puts("space");
     }
 
-    if(zoomOut < 0) zoomOut = 0;
+    initialPos.x = lerp(initialPos.x, 0.95f*deltaTime, astronaut.pos.x);
+    initialPos.y = lerp(initialPos.y, 0.95f*deltaTime, astronaut.pos.y);
 
     View = glm::lookAt(
                       glm::vec3(initialPos.x, initialPos.y, initialPos.z),
@@ -275,7 +247,7 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Use our shader
-		glUseProgram(programID);
+	glUseProgram(programID);
 
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
@@ -322,32 +294,6 @@ int main() {
     MVP = Projection * View * trans;
 
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-
-    // glEnable(GL_LINE_SMOOTH);
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    // glBindBuffer(GL_ARRAY_BUFFER, astronaut.blockID);
-    // glVertexAttribPointer(
-    //   0,              // attribute 0.
-    //   3,              // size (in vertices)
-    //   GL_FLOAT,       // type
-    //   GL_FALSE,       // normalized(yes or no?)
-    //   0,              // offset
-    //   (void *)0       // offset of array buffer
-    // );
-
-    // glBindBuffer(GL_ARRAY_BUFFER, astronaut.colorID);
-    // glVertexAttribPointer(
-    //   1,              // attribute 1.
-    //   3,              // size (in vertices)
-    //   GL_FLOAT,       // type
-    //   GL_FALSE,       // normalized(yes or no?)
-    //   0,              // offset
-    //   (void *)0       // offset of array buffer
-    // );
-
-    // glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
-
     glUseProgram(programID2);
 
     glm::mat4 MVPastronaut = MVP;
@@ -409,14 +355,16 @@ int main() {
           spacePressed = false;
 
 	      	if(pos != astronaut.pos.x && astronaut.speed.y == 0) {
-	     		printf("DISTANCE: %fm\n", fabsf(astronaut.pos.x - pos)/tileSize.x);
+	     		printf("DISTANCE: %f m\n", fabsf(astronaut.pos.x - pos)/tileSize.x);
 	      	}
         }
       }
 
       airMass = randRange(0.f, AIRMASS_MAX);
-      astronaut.speed.y *= astronaut.mass / (astronaut.mass + pow(airMass, astronaut.size.z));
-      astronaut.speed.x *= astronaut.mass / (astronaut.mass + pow(airMass, astronaut.size.z));
+      // drag = (astronaut.mass * pow(astronaut.speed.x, 2) * (astronaut.size.z * tileSize.x) * 0.5);
+      drag = pow((astronaut.mass / (astronaut.mass + airMass)), (astronaut.size.z * tileSize.x));
+      astronaut.speed.y -= drag*deltaTime;
+      astronaut.speed.x -= drag*deltaTime;
       astronaut.pos.y += astronaut.speed.y * (deltaTime/numOfChecks);
       astronaut.pos.x += astronaut.speed.x * (deltaTime/numOfChecks);
     }
@@ -424,46 +372,8 @@ int main() {
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
 
-    // Draw 3D object
-
-    // Bind our texture in Texture Unit 0
-	// glActiveTexture(GL_TEXTURE0);
-	// glBindTexture(GL_TEXTURE_2D, Texture);
-	// // Set our "myTextureSampler" sampler to use Texture Unit 0
-	// glUniform1i(TextureID, 0);
-
-	// // 1rst attribute buffer : vertices
-	// glEnableVertexAttribArray(2);
-	// glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer2);
-	// glVertexAttribPointer(
-	// 	0,                  // attribute
-	// 	3,                  // size
-	// 	GL_FLOAT,           // type
-	// 	GL_FALSE,           // normalized?
-	// 	0,                  // stride
-	// 	(void*)0            // array buffer offset
-	// );
-
-	// // 2nd attribute buffer : UVs
-	// glEnableVertexAttribArray(3);
-	// glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	// glVertexAttribPointer(
-	// 	1,                                // attribute
-	// 	2,                                // size
-	// 	GL_FLOAT,                         // type
-	// 	GL_FALSE,                         // normalized?
-	// 	0,                                // stride
-	// 	(void*)0                          // array buffer offset
-	// );
-
-	// glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-
-	// glDisableVertexAttribArray(2);
- //    glDisableVertexAttribArray(3);
-
     glfwSwapBuffers(window);
     glfwPollEvents();
-
   }
 
   // Cleanup VBO
