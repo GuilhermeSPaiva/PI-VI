@@ -25,12 +25,12 @@ int main() {
   printf("GRAVITY: %lf m/s^2\n", gravity);
   double airMass = randRange(0.f, AIRMASS_MAX);
   // printf("AIR MASS is %lf scrubles\n", airMass);
-  float zoomOut = 500;
+  float zoomOut = 900;
   float leftRight = 0;
   float horizontalAngle = M_PI;
   float verticalAngle = 0.f;
 
-  v3 initialPos = {leftRight+300, 98, zoomOut};
+  v3 initialPos = {-32 * (1280/float(62)), 400, zoomOut};
   v3 currentPos = {
     cos(verticalAngle) * sin(horizontalAngle),
     sin(verticalAngle),
@@ -323,30 +323,30 @@ int main() {
 
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
-    glEnable(GL_LINE_SMOOTH);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glEnable(GL_LINE_SMOOTH);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    glBindBuffer(GL_ARRAY_BUFFER, astronaut.blockID);
-    glVertexAttribPointer(
-      0,              // attribute 0.
-      3,              // size (in vertices)
-      GL_FLOAT,       // type
-      GL_FALSE,       // normalized(yes or no?)
-      0,              // offset
-      (void *)0       // offset of array buffer
-    );
+    // glBindBuffer(GL_ARRAY_BUFFER, astronaut.blockID);
+    // glVertexAttribPointer(
+    //   0,              // attribute 0.
+    //   3,              // size (in vertices)
+    //   GL_FLOAT,       // type
+    //   GL_FALSE,       // normalized(yes or no?)
+    //   0,              // offset
+    //   (void *)0       // offset of array buffer
+    // );
 
-    glBindBuffer(GL_ARRAY_BUFFER, astronaut.colorID);
-    glVertexAttribPointer(
-      1,              // attribute 1.
-      3,              // size (in vertices)
-      GL_FLOAT,       // type
-      GL_FALSE,       // normalized(yes or no?)
-      0,              // offset
-      (void *)0       // offset of array buffer
-    );
+    // glBindBuffer(GL_ARRAY_BUFFER, astronaut.colorID);
+    // glVertexAttribPointer(
+    //   1,              // attribute 1.
+    //   3,              // size (in vertices)
+    //   GL_FLOAT,       // type
+    //   GL_FALSE,       // normalized(yes or no?)
+    //   0,              // offset
+    //   (void *)0       // offset of array buffer
+    // );
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
+    // glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
 
     glUseProgram(programID2);
 
@@ -413,11 +413,12 @@ int main() {
 	      	}
         }
       }
+
+      airMass = randRange(0.f, AIRMASS_MAX);
+      astronaut.speed.y *= astronaut.mass / (astronaut.mass + pow(airMass, astronaut.size.z));
+      astronaut.speed.x *= astronaut.mass / (astronaut.mass + pow(airMass, astronaut.size.z));
       astronaut.pos.y += astronaut.speed.y * (deltaTime/numOfChecks);
       astronaut.pos.x += astronaut.speed.x * (deltaTime/numOfChecks);
-      airMass = randRange(0.f, AIRMASS_MAX);
-      astronaut.pos.x *= astronaut.mass / (astronaut.mass + pow(airMass, astronaut.size.z));
-      astronaut.pos.y *= astronaut.mass / (astronaut.mass + pow(airMass, astronaut.size.z));
     }
 
     glDisableVertexAttribArray(0);
